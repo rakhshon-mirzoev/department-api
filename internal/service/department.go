@@ -1,6 +1,9 @@
 package service
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/rakhshon-mirzoev/department-api/internal/models"
 	"github.com/rakhshon-mirzoev/department-api/internal/repository"
 )
@@ -8,6 +11,7 @@ import (
 type Department interface {
 	Create(d *models.Department) (*models.Department, error)
 	GetByID(id int64, depth uint, includeEmployees bool, sort, order string) (*models.DepartmentResponse, error)
+	Update(id int64, dto *models.UpdateDepartment) (*models.Department, error)
 }
 
 type department struct {
@@ -19,6 +23,13 @@ func NewDepartmentService(r repository.Repository) Department {
 }
 
 func (s *department) Create(d *models.Department) (*models.Department, error) {
+	d.Name = strings.TrimSpace(d.Name)
+	if strings.TrimSpace(d.Name) == "" {
+		return nil, errors.New("name required")
+	}
+	if len([]rune(d.Name)) > 200 || len([]rune(d.Name)) < 1 {
+		return nil, errors.New("name max 200")
+	}
 	return s.r.Department.Create(d)
 }
 
@@ -73,4 +84,18 @@ func (s *department) tree(id int64, depth uint, includeEmployees bool, sort, ord
 	}
 
 	return response, nil
+}
+
+func (s *department) Update(id int64, dto *models.UpdateDepartment) (*models.Department, error) {
+	upd := make(map[string]interface{})
+
+	if dto.Name != nil {
+		upd["name"] = *dto.Name
+	}
+	if dto.ParentID != nil {
+		upd["parent_id"] = *dto.ParentID
+	}
+
+	return s.r.Department.Update(id, upd)
+
 }
