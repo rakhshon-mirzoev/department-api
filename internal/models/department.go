@@ -8,3 +8,14 @@ type Department struct {
 	ParentID  *int64    `json:"parent_id" gorm:"column:parent_id"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 }
+
+type DepartmentResponse struct {
+	Department
+	Employees []Employee           `json:"employees,omitempty"`
+	Children  []DepartmentResponse `json:"children"`
+}
+
+type UpdateDepartment struct {
+	Name     *string `json:"name"`
+	ParentID *int64  `json:"parent_id"`
+}
