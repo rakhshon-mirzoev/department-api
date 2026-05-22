@@ -9,24 +9,29 @@ import (
 )
 
 type employee struct {
-	r repository.Employee
+	r repository.Repository
 }
 
 type Employee interface {
 	Create(e *models.Employee) (*models.Employee, error)
 }
 
-func NewEmployeeService(r repository.Employee) Employee {
+func NewEmployeeService(r repository.Repository) Employee {
 	return &employee{r: r}
 }
 
 func (s *employee) Create(e *models.Employee) (*models.Employee, error) {
+	_, err := s.r.Department.GetByID(e.DepartmentID)
+	if err != nil {
+		return nil, err
+	}
+
 	e.FullName = strings.TrimSpace(e.FullName)
 	e.Position = strings.TrimSpace(e.Position)
 	if err := validateEmployee(e); err != nil {
 		return nil, err
 	}
-	return s.r.Create(e)
+	return s.r.Employee.Create(e)
 }
 
 func validateEmployee(e *models.Employee) error {

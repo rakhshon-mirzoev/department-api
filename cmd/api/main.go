@@ -6,8 +6,10 @@ import (
 
 	"github.com/pressly/goose/v3"
 	"github.com/rakhshon-mirzoev/department-api/internal/config"
+	"github.com/rakhshon-mirzoev/department-api/internal/handler"
 	"github.com/rakhshon-mirzoev/department-api/internal/logger"
 	"github.com/rakhshon-mirzoev/department-api/internal/repository"
+	"github.com/rakhshon-mirzoev/department-api/internal/service"
 	"github.com/rakhshon-mirzoev/department-api/pkg/db"
 )
 
@@ -34,10 +36,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	_ = repository.NewRepository(gormdb)
+	repo := repository.NewRepository(gormdb)
+	svc := service.NewService(repo)
+	h := handler.NewHandler(svc)
+	mux := handler.SetupRoutes(h)
 
 	log.Info("started", "port", 8080)
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Error("failed to start", "err", err)
 		os.Exit(1)
 	}

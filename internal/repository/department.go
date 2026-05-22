@@ -10,6 +10,10 @@ type Department interface {
 	GetByID(id int64) (*models.Department, error)
 	GetChildren(parentID int64) ([]models.Department, error)
 	Update(id int64, updates map[string]interface{}) (*models.Department, error)
+	Delete(id int64) error
+	HasChildren(id int64) (bool, error)
+	DeleteWithReassign(id, toDeptID int64) error
+	GetByName(name string, parentID *int64) (*models.Department, error)
 }
 
 type department struct {
@@ -53,6 +57,37 @@ func (r *department) Update(id int64, updates map[string]interface{}) (*models.D
 	return r.GetByID(id)
 }
 
+func (r *department) GetByName(name string, parentID *int64) (*models.Department, error) {
+	var d models.Department
+	q := r.db.Where("name = ?", name)
+	if parentID == nil {
+		q = q.Where("parent_id IS NULL")
+	} else {
+		q = q.Where("parent_id = ?", *parentID)
+	}
+	if err := q.First(&d).Error; err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
 func (r *department) Delete(id int64) error {
 	return r.db.Delete(&models.Department{}, id).Error
+}
+
+func (r *department) HasChildren(id int64) (bool, error) {
+	var count int64
+	if err := r.db.Model(&models.Department{}).Where("parent_id = ?", id).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (r *department) DeleteWithReassign(id, toDeptID int64) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&models.Employee{}).Where("department_id = ?", id).Update("department_id", toDeptID).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&models.Department{}, id).Error
+	})
 }

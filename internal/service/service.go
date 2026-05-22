@@ -9,7 +9,7 @@ type Service struct {
 
 func NewService(r repository.Repository) Service {
 	return Service{
-		Employee:   NewEmployeeService(r.Employee),
+		Employee:   NewEmployeeService(r),
 		Department: NewDepartmentService(r),
 	}
 }
